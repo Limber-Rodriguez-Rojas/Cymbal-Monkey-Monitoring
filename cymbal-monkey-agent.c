@@ -81,6 +81,7 @@ int main() {
 
     // Close the output file
     fclose(output_file);
+    system("echo --------- >> /root/new.txt && date >> /root/new.txt && cat /root/output.txt >> /root/new.txt"); // To create a file with the logs
     sleep(5);
     }
     return 0;
