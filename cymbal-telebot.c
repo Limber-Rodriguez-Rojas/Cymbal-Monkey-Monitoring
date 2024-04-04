@@ -55,11 +55,14 @@ int main(int argc, char *argv[])
     telebot_message_t message;
     telebot_update_type_e update_types[] = {TELEBOT_UPDATE_TYPE_MESSAGE};
 
+    char cpu_value[1024];
+    char mem_value[1024];
+
+    float cpu_usage,memory_usage;
+
     while (1)
     {
         // Take the value of CPU --------
-        char cpu_value[1024];
-        char mem_value[1024];
 
         // Open the /proc/stat file for reading
         fp = fopen("/root/output.txt", "r");
@@ -75,14 +78,22 @@ int main(int argc, char *argv[])
         // Close the file
         fclose(fp);
 
+	// Get the values for CPU and Memory in float
+        // Using sscanf to directly extract the float value
+        sscanf(cpu_value, "CPU Usage: %f%%", &cpu_usage);
+	sscanf(mem_value, "Memory Usage: %f%%", &memory_usage);
+        printf("CPU Usage: %.2f%%\nMemory Usage: %.2f%%\n", cpu_usage, memory_usage); // Printing the extracted float value
+
         // --------------------------------
         telebot_update_t *updates;
         ret = telebot_get_updates(handle, offset, 20, 0, update_types, 0, &updates, &count);
         if (ret != TELEBOT_ERROR_NONE){
 	    // not an update, we can still send data
-	    if (user != 0){
-		printf("Trying to read data, the chatID is: %lld\n", user);
-	        ret = telebot_send_message(handle, user, "test-final", "HTML", false, false, message.message_id, "");
+	    if (user != 0 && (memory_usage >= 25 || cpu_usage >= 25)){
+		printf("Sending data to chatID: %lld\n", user);
+		printf("CPU Usage: %.2f%%\nMemory Usage: %.2f%%\n", cpu_usage, memory_usage); // Printing the extracted float value
+											
+	        ret = telebot_send_message(handle, user, cpu_value, "HTML", false, false, message.message_id, "");
                 if (ret != TELEBOT_ERROR_NONE)
                     printf("Failed to send ALERT: %d \n", ret);
 	    }
