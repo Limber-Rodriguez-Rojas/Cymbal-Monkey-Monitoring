@@ -9,27 +9,6 @@
 
 int main(int argc, char *argv[])
 {
-    // Take the value of CPU --------
-    FILE *fp1;
-    char cpu_value[1024];
-    char mem_value[1024];
-
-    // Open the /proc/stat file for reading
-    fp1 = fopen("/root/output.txt", "r");
-    if (fp1 == NULL) {
-        perror("Error opening /proc/stat");
-        exit(1);
-    }
-
-    // Read the first line which contains overall CPU statistics
-    fgets(cpu_value, sizeof(cpu_value), fp1);
-    fgets(mem_value, sizeof(mem_value), fp1);
-
-    // Close the file
-    fclose(fp1);
-
-    // --------------------------------
-
     printf("Welcome to Cymbal-monkey\n");
 
     FILE *fp = fopen(".token", "r");
@@ -71,20 +50,49 @@ int main(int argc, char *argv[])
     telebot_put_me(&me);
 
     int index, count, offset = -1;
+    bool user=false;
     telebot_error_e ret;
     telebot_message_t message;
     telebot_update_type_e update_types[] = {TELEBOT_UPDATE_TYPE_MESSAGE};
 
     while (1)
     {
+        // Take the value of CPU --------
+        char cpu_value[1024];
+        char mem_value[1024];
+
+        // Open the /proc/stat file for reading
+        fp = fopen("/root/output.txt", "r");
+        if (fp == NULL) {
+            perror("Error opening /proc/stat");
+            exit(1);
+        }
+
+        // Read the first line which contains overall CPU statistics
+        fgets(cpu_value, sizeof(cpu_value), fp);
+        fgets(mem_value, sizeof(mem_value), fp);
+
+        // Close the file
+        fclose(fp);
+
+        // --------------------------------
         telebot_update_t *updates;
         ret = telebot_get_updates(handle, offset, 20, 0, update_types, 0, &updates, &count);
-        if (ret != TELEBOT_ERROR_NONE)
+        if (ret != TELEBOT_ERROR_NONE){
+	    // not an update, we can still send data
+	    if (user){
+		printf("Trying to read data, the chatID is: \n");
+	        ret = telebot_send_message(handle, 6817392798, "test-final", "HTML", false, false, message.message_id, "");
+                if (ret != TELEBOT_ERROR_NONE)
+                    printf("Failed to send ALERT: %d \n", ret);
+	    }
             continue;
+	}
         printf("Number of updates: %d\n", count);
         for (index = 0; index < count; index++)
         {
             message = updates[index].message;
+	    user=true;
             if (message.text)
             {
                 printf("%s: %s \n", message.from->first_name, message.text);
