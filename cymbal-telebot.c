@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     telebot_put_me(&me);
 
     int index, count, offset = -1;
-    bool user=false;
+    long long int user=0;
     telebot_error_e ret;
     telebot_message_t message;
     telebot_update_type_e update_types[] = {TELEBOT_UPDATE_TYPE_MESSAGE};
@@ -80,9 +80,9 @@ int main(int argc, char *argv[])
         ret = telebot_get_updates(handle, offset, 20, 0, update_types, 0, &updates, &count);
         if (ret != TELEBOT_ERROR_NONE){
 	    // not an update, we can still send data
-	    if (user){
-		printf("Trying to read data, the chatID is: \n");
-	        ret = telebot_send_message(handle, 6817392798, "test-final", "HTML", false, false, message.message_id, "");
+	    if (user != 0){
+		printf("Trying to read data, the chatID is: %lld\n", user);
+	        ret = telebot_send_message(handle, user, "test-final", "HTML", false, false, message.message_id, "");
                 if (ret != TELEBOT_ERROR_NONE)
                     printf("Failed to send ALERT: %d \n", ret);
 	    }
@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
         for (index = 0; index < count; index++)
         {
             message = updates[index].message;
-	    user=true;
             if (message.text)
             {
                 printf("%s: %s \n", message.from->first_name, message.text);
@@ -108,8 +107,12 @@ int main(int argc, char *argv[])
                 else if (strstr(message.text, "/values")){
 	            snprintf(str, SIZE_OF_ARRAY(str), "<i>%s\n%s</i>", cpu_value, mem_value);
 		}
+		else if (strstr(message.text, "/enroll")){
+                    snprintf(str, SIZE_OF_ARRAY(str), "You have successfully enrolled this chat for Alerts, chatID: %lld\n", message.chat->id);
+		    user=message.chat->id;
+                }
 		else {
-                    snprintf(str, SIZE_OF_ARRAY(str), "Hello %s, cymbal-monkey currently offers the following options: \n/help \n/cpu \n/memory \n/values", message.from->first_name);
+                    snprintf(str, SIZE_OF_ARRAY(str), "Hello %s, cymbal-monkey currently offers the following options: \n/help \n/cpu \n/memory \n/values \n/enroll\n", message.from->first_name);
 		}
                 ret = telebot_send_message(handle, message.chat->id, str, "HTML", false, false, updates[index].message.message_id, "");
                 if (ret != TELEBOT_ERROR_NONE)
